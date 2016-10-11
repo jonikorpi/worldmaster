@@ -1,0 +1,16 @@
+{
+  "name": "lootmaster",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {},
+  "dependencies": {
+    "firebase": "^3.4.1",
+    "firebase-queue": "^1.5.0"
+  },
+  "scripts": {
+    "start": "node queue",
+    "deploy": "now -e NODE_ENV=production",
+    "now-start": "node queue",
+    "now-build": ""
+  }
+}

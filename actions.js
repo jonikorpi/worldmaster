@@ -1,14 +1,38 @@
+var firebase = require('firebase');
+
 module.exports = {
 
   startGame: function(request, progress, resolve, reject, database) {
-    var updates = {};
+    database.ref("games/" + request.gameID).once("value", function(snapshot) {
+      var updates = {};
+      var game = snapshot.val();
+      var teams = game.teams;
 
-    updates["games/"           + request.gameID] = { started: true };
-    updates["gamePlayers/"     + request.gameID] = true;
-    updates["gameInventories/" + request.gameID] = true;
-    updates["gameStatuses/"    + request.gameID] = true;
+      if (teams[1] && teams[2]) {
+        updates["gamePlayers/" + request.gameID] = {
+          "1": teams[1],
+          "2": teams[2],
+        };
+        updates["gameInventories/" + request.gameID] = {
+          "1": teams[1],
+          "2": teams[2],
+        };
 
-    database.ref().update(updates).then(resolve).catch(reject);
+        updates["gameStatuses/" + request.gameID] = {
+          turn: 1,
+          turnOf: 1,
+          turnStarted: firebase.database.ServerValue.TIMESTAMP + 15*1000,
+        };
+
+        updates["games/" + request.gameID] = { started: true };
+
+        database.ref().update(updates).then(resolve).catch(reject);
+      }
+      else {
+        reject("No teams or bad teams");
+      }
+
+    }).catch(reject);
   },
 
   endGame: function(request, progress, resolve, reject, database) {

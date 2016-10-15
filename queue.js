@@ -10,12 +10,24 @@ firebase.initializeApp({
 });
 
 var database = firebase.database();
-var queue = database.ref('queue');
 
-var queueHandler = new Queue(queue, function(data, progress, resolve, reject) {
-
+var actionQueue = new Queue(database.ref("actionQueue"), function(data, progress, resolve, reject) {
   var request = data.request;
+  console.log(request.action, "for", request.playerID, "in", request.gameID);
 
+  if (request) {
+    switch (request.action) {
+      default:
+        reject("Unknown action");
+    }
+  }
+  else {
+    reject("Missing request or request attributes");
+  }
+});
+
+var gameQueue = new Queue(database.ref("gameQueue"), function(data, progress, resolve, reject) {
+  var request = data.request;
   console.log(request.action, "for", request.playerID, "in", request.gameID);
 
   if (request) {
@@ -33,13 +45,13 @@ var queueHandler = new Queue(queue, function(data, progress, resolve, reject) {
   else {
     reject("Missing request or request attributes");
   }
-
 });
 
-process.on('SIGINT', function() {
-  console.log('Starting queue shutdown');
-  queueHandler.shutdown().then(function() {
-    console.log('Finished queue shutdown');
+process.on("SIGINT", function() {
+  console.log("Starting queue shutdowns");
+
+  actionQueue.shutdown().then(gameQueue.shutdown()).then(function() {
+    console.log("Finished queue shutdowns");
     process.exit(0);
   });
 });

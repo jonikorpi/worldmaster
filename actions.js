@@ -1,5 +1,3 @@
-var firebase = require('firebase');
-
 module.exports = {
 
   startGame: function(request, progress, resolve, reject, database) {
@@ -21,7 +19,7 @@ module.exports = {
         updates["gameStatuses/" + request.gameID] = {
           turn: 1,
           turnOf: 1,
-          turnStarted: firebase.database.ServerValue.TIMESTAMP + 15*1000,
+          turnStarted: Date.now() + 15*1000,
         };
 
         updates["games/" + request.gameID] = { started: true };

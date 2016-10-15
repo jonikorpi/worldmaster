@@ -16,7 +16,7 @@ var queueHandler = new Queue(queue, function(data, progress, resolve, reject) {
 
   var request = data.request;
 
-  console.log("Processing ", request.action, " for ", request.playerID, " in ", request.gameID);
+  console.log(request.action, "for", request.playerID, "in", request.gameID);
 
   if (request) {
     switch (request.action) {

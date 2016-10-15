@@ -18,12 +18,7 @@ var queueHandler = new Queue(queue, function(data, progress, resolve, reject) {
 
   console.log("Processing ", request.action, " for ", request.playerID, " in ", request.gameID);
 
-  if (
-      request
-      && typeof request.playerID === "string"
-      && typeof request.gameID   === "string"
-      && typeof request.action   === "string"
-  ) {
+  if (request) {
     switch (request.action) {
       case "startGame":
         actions.startGame(request, progress, resolve, reject, database);

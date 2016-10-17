@@ -16,12 +16,6 @@ module.exports = {
           "2": teams[2],
         };
 
-        updates["gameStatuses/" + request.gameID] = {
-          turn: 1,
-          turnOf: 1,
-          turnStarted: Date.now() + 15*1000,
-        };
-
         updates["games/" + request.gameID] = { started: true };
 
         database.ref().update(updates).then(resolve).catch(reject);
@@ -39,7 +33,6 @@ module.exports = {
     updates["games/"           + request.gameID] = { started: false };
     updates["gamePlayers/"     + request.gameID] = false;
     updates["gameInventories/" + request.gameID] = false;
-    updates["gameStatuses/"    + request.gameID] = false;
 
     database.ref().update(updates).then(resolve).catch(reject);
   },

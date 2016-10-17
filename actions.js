@@ -16,7 +16,7 @@ module.exports = {
           "2": teams[2],
         };
 
-        updates["games/" + request.gameID] = { started: true };
+        updates["games/" + request.gameID + "/started"] = true;
 
         database.ref().update(updates).then(resolve).catch(reject);
       }
@@ -30,7 +30,7 @@ module.exports = {
   endGame: function(request, progress, resolve, reject, database) {
     var updates = {};
 
-    updates["games/"           + request.gameID] = { started: false };
+    updates["games/" + request.gameID + "/started"] = false;
     updates["gamePlayers/"     + request.gameID] = false;
     updates["gameInventories/" + request.gameID] = false;
 

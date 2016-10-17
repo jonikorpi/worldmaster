@@ -1,3 +1,5 @@
+var firebase = require('firebase');
+
 module.exports = {
 
   startGame: function(request, progress, resolve, reject, database) {
@@ -16,8 +18,7 @@ module.exports = {
           "2": teams[2],
         };
 
-        updates["games/" + request.gameID + "/started"] = true;
-
+        updates["games/" + request.gameID + "/started"] = firebase.database.ServerValue.TIMESTAMP;
         database.ref().update(updates).then(resolve).catch(reject);
       }
       else {

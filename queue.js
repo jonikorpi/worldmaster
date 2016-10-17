@@ -11,6 +11,10 @@ firebase.initializeApp({
 
 var database = firebase.database();
 
+// Set presence
+var presence = database.ref("lootmasters").push(true);
+presence.onDisconnect().remove();
+
 var actionQueue = new Queue(database.ref("actionQueue"), {"numWorkers": 5}, function(data, progress, resolve, reject) {
   var request = data.request;
   console.log(request.action, "for", request.playerID, "in", request.gameID);

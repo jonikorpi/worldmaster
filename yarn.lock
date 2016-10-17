@@ -81,8 +81,8 @@ firebase-queue@^1.5.0:
     winston "^2.2.0"
 
 firebase@^3.0.0, firebase@^3.4.1:
-  version "3.4.1"
-  resolved "https://registry.yarnpkg.com/firebase/-/firebase-3.4.1.tgz#080c919596361c15ed00e68992af215ac419cc15"
+  version "3.5.0"
+  resolved "https://registry.yarnpkg.com/firebase/-/firebase-3.5.0.tgz#53e5e5e2c827e731b280fea56e02cbd06a7cd22e"
   dependencies:
     dom-storage "2.0.2"
     faye-websocket "0.9.3"

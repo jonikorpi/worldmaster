@@ -2,7 +2,6 @@ var Queue = require("firebase-queue");
 var firebase = require("firebase");
 
 var actions = require("./actions");
-var utils = require("./utils");
 
 // Setup connection
 firebase.initializeApp({

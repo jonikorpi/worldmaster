@@ -11,7 +11,7 @@ firebase.initializeApp({
 
 var database = firebase.database();
 
-var actionQueue = new Queue(database.ref("actionQueue"), function(data, progress, resolve, reject) {
+var actionQueue = new Queue(database.ref("actionQueue"), {"numWorkers": 5}, function(data, progress, resolve, reject) {
   var request = data.request;
   console.log(request.action, "for", request.playerID, "in", request.gameID);
 
@@ -26,7 +26,7 @@ var actionQueue = new Queue(database.ref("actionQueue"), function(data, progress
   }
 });
 
-var gameQueue = new Queue(database.ref("gameQueue"), function(data, progress, resolve, reject) {
+var gameQueue = new Queue(database.ref("gameQueue"), {"numWorkers": 5}, function(data, progress, resolve, reject) {
   var request = data.request;
   console.log(request.action, "for", request.playerID, "in", request.gameID);
 

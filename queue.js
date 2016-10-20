@@ -5,9 +5,9 @@ var actions = require("./actions");
 
 // Setup connection
 firebase.initializeApp({
-  databaseURL: "https://loot-9909b.firebaseio.com",
+  databaseURL: "https://world-15e5d.firebaseio.com",
   serviceAccount: './secret.json',
-  databaseAuthVariableOverride: { lootmaster: true },
+  databaseAuthVariableOverride: { worldmaster: true },
 });
 var database = firebase.database();
 

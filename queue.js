@@ -12,7 +12,7 @@ firebase.initializeApp({
 var database = firebase.database();
 
 // Setup presence
-var presence = database.ref("lootmasters").push(true);
+var presence = database.ref("worldmasters").push(true);
 presence.onDisconnect().remove();
 
 // Action queue

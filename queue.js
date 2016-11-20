@@ -11,10 +11,6 @@ firebase.initializeApp({
 });
 var database = firebase.database();
 
-// Setup presence
-var presence = database.ref("worldmasters").push(true);
-presence.onDisconnect().remove();
-
 // Action queue
 var actionQueue = new Queue(database.ref("actionQueue"), {"numWorkers": 5}, function(data, progress, resolve, reject) {
   var request = data.request;

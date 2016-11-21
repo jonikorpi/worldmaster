@@ -1,12 +1,13 @@
 var Queue = require("firebase-queue");
-var firebase = require("firebase");
+var firebase = require("firebase-admin");
 
+var serviceAccount = require("./secret.json");
 var actions = require("./actions");
 
 // Setup connection
 firebase.initializeApp({
+  credential: firebase.credential.cert(serviceAccount),
   databaseURL: "https://world-15e5d.firebaseio.com",
-  serviceAccount: './secret.json',
   databaseAuthVariableOverride: { worldmaster: true },
 });
 var database = firebase.database();

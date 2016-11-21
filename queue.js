@@ -2,7 +2,6 @@ var Queue = require("firebase-queue");
 var firebase = require("firebase-admin");
 
 var serviceAccount = require("./secret.json");
-var actions = require("./actions");
 
 // Setup connection
 firebase.initializeApp({
@@ -12,15 +11,61 @@ firebase.initializeApp({
 });
 var database = firebase.database();
 
-// Action queue
-var actionQueue = new Queue(database.ref("actionQueue"), {"numWorkers": 5}, function(data, progress, resolve, reject) {
+// Terminate nicely
+process.on("SIGINT", function() {
+  console.log("Starting queue shutdowns");
+
+  playerQueue.shutdown().then(actionQueue.shutdown()).then(function() {
+    console.log("Finished queue shutdowns");
+    process.exit(0);
+  });
+});
+
+// Player queue
+var playerQueue = new Queue(database.ref("playerQueue"), {"numWorkers": 5}, function(data, progress, resolve, reject) {
   var request = data.request;
-  console.log(request.action, "for", request.playerID, "in", request.gameID);
+  console.log("playerQueue:", request.action, "for", request.playerID);
 
   if (request) {
+    var updates = {};
+
     switch (request.action) {
+
+      case "spawn":
+        database.ref("playerSecrets/" + request.playerID).once("value", function(snapshot) {
+          var player = snapshot.val();
+
+          if (player && player.location && player.location.x && player.location.y && player.location.z) {
+            reject("Player has already spawned");
+          }
+
+          var spawnLocation = [0,0,0];
+
+          updates["playerSecrets/" + request.playerID] = {
+            location: {
+              x: spawnLocation[0],
+              y: spawnLocation[1],
+              z: spawnLocation[2],
+            },
+          };
+
+          updates["locations/0/0/0/object"] = {
+            type: "player",
+            playerID: request.playerID,
+            previousLocation: {
+              x: spawnLocation[0],
+              y: spawnLocation[1],
+              z: spawnLocation[2],
+            },
+          }
+
+          database.ref().update(updates).then(resolve).catch(reject);
+        }).catch(reject);
+        break;
+
       default:
         reject("Unknown action");
+
     }
   }
   else {
@@ -29,18 +74,14 @@ var actionQueue = new Queue(database.ref("actionQueue"), {"numWorkers": 5}, func
 });
 
 // Game queue
-var gameQueue = new Queue(database.ref("gameQueue"), {"numWorkers": 5}, function(data, progress, resolve, reject) {
+var actionQueue = new Queue(database.ref("actionQueue"), {"numWorkers": 5}, function(data, progress, resolve, reject) {
   var request = data.request;
-  console.log(request.action, "for", request.playerID, "in", request.gameID);
+  console.log("actionQueue:", request.action, "for", request.playerID, "in");
 
   if (request) {
+    var updates = {};
+
     switch (request.action) {
-      case "startGame":
-        actions.startGame(request, progress, resolve, reject, database);
-        break;
-      case "endGame":
-        actions.endGame(request, progress, resolve, reject, database);
-        break;
       default:
         reject("Unknown action");
     }
@@ -48,14 +89,4 @@ var gameQueue = new Queue(database.ref("gameQueue"), {"numWorkers": 5}, function
   else {
     reject("Missing request or request attributes");
   }
-});
-
-// Terminate nicely
-process.on("SIGINT", function() {
-  console.log("Starting queue shutdowns");
-
-  actionQueue.shutdown().then(gameQueue.shutdown()).then(function() {
-    console.log("Finished queue shutdowns");
-    process.exit(0);
-  });
 });

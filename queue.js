@@ -35,17 +35,16 @@ var playerQueue = new Queue(database.ref("playerQueue"), {"numWorkers": 5}, func
         database.ref("playerSecrets/" + request.playerID).once("value", function(snapshot) {
           var player = snapshot.val();
 
-          if (player && player.location && player.location.x && player.location.y && player.location.z) {
+          if (player && player.location && player.location.x && player.location.y) {
             reject("Player has already spawned");
           }
 
-          var spawnLocation = [0,0,0];
+          var spawnLocation = [0,0];
 
           updates["playerSecrets/" + request.playerID] = {
             location: {
               x: spawnLocation[0],
               y: spawnLocation[1],
-              z: spawnLocation[2],
             },
           };
 
@@ -55,7 +54,6 @@ var playerQueue = new Queue(database.ref("playerQueue"), {"numWorkers": 5}, func
             previousLocation: {
               x: spawnLocation[0],
               y: spawnLocation[1],
-              z: spawnLocation[2],
             },
           }
 

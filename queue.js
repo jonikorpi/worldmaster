@@ -48,7 +48,7 @@ var playerQueue = new Queue(database.ref("playerQueue"), {"numWorkers": 5}, func
             },
           };
 
-          updates["locations/0/0/0/object"] = {
+          updates[`locations/${spawnLocation[0]}/${spawnLocation[1]}/object`] = {
             type: "player",
             playerID: request.playerID,
             previousLocation: {

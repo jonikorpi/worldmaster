@@ -4,13 +4,13 @@
   "private": true,
   "devDependencies": {},
   "dependencies": {
-    "firebase-admin": "^4.0.2",
-    "firebase-queue": "^1.5.0"
+    "firebase-admin": "^4.0.3",
+    "firebase-queue": "^1.6.0"
   },
   "scripts": {
-    "start": "node queue",
+    "start": "node --harmony-async-await queue",
     "deploy": "now -e NODE_ENV=production",
-    "now-start": "node queue",
+    "now-start": "node --harmony-async-await queue",
     "now-build": ""
   }
 }

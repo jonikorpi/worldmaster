@@ -11,18 +11,7 @@ firebase.initializeApp({
 });
 var database = firebase.database();
 
-// Terminate nicely
-process.on("SIGINT", function() {
-  console.log("Starting queue shutdowns");
-
-  playerQueue.shutdown().then(actionQueue.shutdown()).then(function() {
-    console.log("Finished queue shutdowns");
-    process.exit(0);
-  });
-});
-
 // Functions
-
 var prepareRequest = function(data, progress, resolve, reject) {
   try {
     if (data.request) {
@@ -125,6 +114,7 @@ var processRequest = async function(request, progress, resolve, reject) {
   }
 }
 
+// Fetching functions
 var getPlayer = function(playerID) {
   return database.ref("playerSecrets/" + playerID).once("value").then(function(snapshot) {
     return snapshot.val();
@@ -137,6 +127,7 @@ var getLocation = function(x, y) {
   });
 }
 
+// Utility functions
 var distanceBetween = function(origin, target) {
   return (
     Math.abs(
@@ -148,18 +139,30 @@ var distanceBetween = function(origin, target) {
   );
 }
 
-// Player queue
+// Start player queue
 var playerQueue = new Queue(
   database.ref("playerQueue"),
   {"numWorkers": 5},
   prepareRequest
 );
 
-// Game queue
+// Start game queue
 var actionQueue = new Queue(
   database.ref("actionQueue"),
   {"numWorkers": 5},
   prepareRequest
 );
+
+// Terminate nicely
+process.on("SIGINT", function() {
+  console.log("Starting queue shutdowns");
+
+  playerQueue.shutdown()
+  .then(actionQueue.shutdown())
+  .then(function() {
+    console.log("Finished queue shutdowns");
+    process.exit(0);
+  });
+});
 
 console.log("Queues started");

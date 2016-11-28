@@ -65,7 +65,8 @@ var processRequest = async function(request, progress, resolve, reject) {
     case "move":
       var player = await getPlayer(request.playerID);
 
-      if (!player || !player.location || !player.location.x || !player.location.y) {
+      if (!player) {
+        console.log(player, "Player has not spawned?");
         reject("Player has not spawned?");
         break;
       }
@@ -73,6 +74,7 @@ var processRequest = async function(request, progress, resolve, reject) {
       var distance = distanceBetween([player.location.x, player.location.y], [request.target.x, request.target.y]);
 
       if (distance > 6) {
+        console.log("Distance too great");
         reject("Distance too great");
         break;
       }

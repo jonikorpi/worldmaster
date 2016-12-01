@@ -37,14 +37,14 @@ var processRequest = async function(request, progress, resolve, reject) {
     case "spawn":
       var player = await getPlayer(request.playerID);
 
-      if (player && player.location && player.location.x && player.location.y) {
+      if (player && player && player.x && player.y) {
         error("Player has already spawned", request.playerID, updates, reject);
         break;
       }
 
       var spawnLocation = [0,0];
-      updates[`playerSecrets/${request.playerID}/location/x`] = spawnLocation[0];
-      updates[`playerSecrets/${request.playerID}/location/y`] = spawnLocation[1];
+      updates[`playerSecrets/${request.playerID}/x`] = spawnLocation[0];
+      updates[`playerSecrets/${request.playerID}/y`] = spawnLocation[1];
       updates[`locations/${spawnLocation[0]}/${spawnLocation[1]}/objectID`] = request.playerID;
       updates[`playerSecrets/${request.playerID}/message`] = "Successfully spawned";
       break;
@@ -58,19 +58,19 @@ var processRequest = async function(request, progress, resolve, reject) {
         break;
       }
 
-      var distance = distanceBetween([player.location.x, player.location.y], [request.target.x, request.target.y]);
+      var distance = distanceBetween([player.x, player.y], [request.target.x, request.target.y]);
 
       if (distance > 6) {
         error("Distance too great", request.playerID, updates, reject);
         break;
       }
 
-      var currentLocation = await getLocation(player.location.x, player.location.y);
+      var currentLocation = await getLocation(player.x, player.y);
       var targetLocation = await getLocation(request.target.x, request.target.y);
 
-      updates[`playerSecrets/${request.playerID}/location/x`] = request.target.x;
-      updates[`playerSecrets/${request.playerID}/location/y`] = request.target.y;
-      updates[`locations/${player.location.x}/${player.location.y}/objectID`] = null;
+      updates[`playerSecrets/${request.playerID}/x`] = request.target.x;
+      updates[`playerSecrets/${request.playerID}/y`] = request.target.y;
+      updates[`locations/${player.x}/${player.y}/objectID`] = null;
       updates[`locations/${request.target.x}/${request.target.y}/objectID`] = request.playerID;
       updates[`playerSecrets/${request.playerID}/message`] = "Successfully moved";
 

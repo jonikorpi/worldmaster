@@ -15,7 +15,7 @@ var database = firebase.database();
 var prepareRequest = function(data, progress, resolve, reject) {
   try {
     if (data.request) {
-      console.log("Processing", data.request.action, "for", data.request.playerID);
+      console.log("Processing", data.request);
       processRequest(data.request, progress, resolve, reject);
     }
     else {
@@ -38,27 +38,15 @@ var processRequest = async function(request, progress, resolve, reject) {
       var player = await getPlayer(request.playerID);
 
       if (player && player.location && player.location.x && player.location.y) {
-        reject("Player has already spawned");
+        error("Player has already spawned", request.playerID, updates, reject);
         break;
       }
 
       var spawnLocation = [0,0];
-
-      updates["playerSecrets/" + request.playerID] = {
-        location: {
-          x: spawnLocation[0],
-          y: spawnLocation[1],
-        },
-      };
-
-      updates[`locations/${spawnLocation[0]}/${spawnLocation[1]}/object`] = {
-        type: "player",
-        playerID: request.playerID,
-        previousLocation: {
-          x: spawnLocation[0],
-          y: spawnLocation[1],
-        },
-      }
+      updates[`playerSecrets/${request.playerID}/location/x`] = spawnLocation[0];
+      updates[`playerSecrets/${request.playerID}/location/y`] = spawnLocation[1];
+      updates[`locations/${spawnLocation[0]}/${spawnLocation[1]}/objectID`] = request.playerID;
+      updates[`playerSecrets/${request.playerID}/message`] = "Successfully spawned";
       break;
 
     // Move
@@ -66,44 +54,31 @@ var processRequest = async function(request, progress, resolve, reject) {
       var player = await getPlayer(request.playerID);
 
       if (!player) {
-        console.log(player, "Player has not spawned?");
-        reject("Player has not spawned?");
+        error("Player has not spawned?", request.playerID, updates, reject);
         break;
       }
 
       var distance = distanceBetween([player.location.x, player.location.y], [request.target.x, request.target.y]);
 
       if (distance > 6) {
-        console.log("Distance too great");
-        reject("Distance too great");
+        error("Distance too great", request.playerID, updates, reject);
         break;
       }
 
       var currentLocation = await getLocation(player.location.x, player.location.y);
       var targetLocation = await getLocation(request.target.x, request.target.y);
 
-      updates["playerSecrets/" + request.playerID] = {
-        location: {
-          x: request.target.x,
-          y: request.target.y,
-        },
-      };
+      updates[`playerSecrets/${request.playerID}/location/x`] = request.target.x;
+      updates[`playerSecrets/${request.playerID}/location/y`] = request.target.y;
+      updates[`locations/${player.location.x}/${player.location.y}/objectID`] = null;
+      updates[`locations/${request.target.x}/${request.target.y}/objectID`] = request.playerID;
+      updates[`playerSecrets/${request.playerID}/message`] = "Successfully moved";
 
-      updates[`locations/${player.location.x}/${player.location.y}/object`] = false;
-
-      updates[`locations/${request.target.x}/${request.target.y}/object`] = {
-        type: "player",
-        playerID: request.playerID,
-        previousLocation: {
-          x: player.location.x,
-          y: player.location.y,
-        },
-      }
       break;
 
     // Reject
     default:
-      reject("Unknown action");
+      error("Unknown action", request.playerID, updates, reject);
   }
 
   if (Object.keys(updates).length > 0) {
@@ -111,8 +86,7 @@ var processRequest = async function(request, progress, resolve, reject) {
     return database.ref().update(updates).then(resolve).catch(reject);
   }
   else {
-    console.log("No updates to make");
-    return reject("No updates to make");
+    reject("No valid updates to make");
   }
 }
 
@@ -130,6 +104,13 @@ var getLocation = function(x, y) {
 }
 
 // Utility functions
+var error = function(message, playerID, reject) {
+  console.log(playerID, message);
+  var updates = {};
+  updates[`playerSecrets/${playerID}/message`] = message;
+  return database.ref().update(updates).then(reject).catch(reject);
+}
+
 var distanceBetween = function(origin, target) {
   return (
     Math.abs(

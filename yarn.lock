@@ -78,9 +78,9 @@ faye-websocket@0.9.3:
   dependencies:
     websocket-driver ">=0.5.1"
 
-firebase-admin@^4.0.3:
-  version "4.0.3"
-  resolved "https://registry.yarnpkg.com/firebase-admin/-/firebase-admin-4.0.3.tgz#df2815424a23329c7ee597e29ea8bfeb67ee7db2"
+firebase-admin@^4.0.4:
+  version "4.0.4"
+  resolved "https://registry.yarnpkg.com/firebase-admin/-/firebase-admin-4.0.4.tgz#051a5286699837a1eaf9e3eafec99c123131663a"
   dependencies:
     "@types/jsonwebtoken" "^7.1.33"
     faye-websocket "0.9.3"

@@ -36,17 +36,45 @@ var processRequest = async function(request, progress, resolve, reject) {
     // Spawn
     case "spawn":
       var player = await getPlayer(request.playerID);
-
-      if (player && player && player.x && player.y) {
+      if (player) {
         error("Player has already spawned", request.playerID, updates, reject);
         break;
       }
 
-      var spawnLocation = [0,0];
-      updates[`playerSecrets/${request.playerID}/x`] = spawnLocation[0];
-      updates[`playerSecrets/${request.playerID}/y`] = spawnLocation[1];
-      updates[`locations/${spawnLocation[0]}/${spawnLocation[1]}/objectID`] = request.playerID;
-      updates[`playerSecrets/${request.playerID}/message`] = "Successfully spawned";
+
+      var spawnFound = false;
+      var spawnLocation;
+
+      while (!spawnFound) {
+        spawnLocation = [
+          Math.floor(Math.random() * 20) - 10,
+          Math.floor(Math.random() * 20) - 10,
+        ];
+
+        if (await !getLocation(spawnLocation[0], spawnLocation[1]).tileOwner) {
+          spawnFound = true;
+        }
+      }
+
+      updates[`playerSecrets/${request.playerID}`] = {
+        "message": "Successfully spawned",
+        "turn": 1,
+        locations: {
+          [spawnLocation[0]]: {
+            [spawnLocation[1]]: true
+          }
+        },
+      };
+
+      var location = `locations/${spawnLocation[0]}/${spawnLocation[1]}`;
+
+      updates[`${location}/tileOwner`] = request.playerID;
+      updates[`${location}/objectOwner`] = request.playerID;
+      updates[`${location}/objectType`] = "tower";
+      updates[`${location}/objectLastX`] = null;
+      updates[`${location}/objectLastY`] = null;
+      updates[`${location}/objectLastTurn`] = 0;
+
       break;
 
     // Move
@@ -92,13 +120,13 @@ var processRequest = async function(request, progress, resolve, reject) {
 
 // Fetching functions
 var getPlayer = function(playerID) {
-  return database.ref("playerSecrets/" + playerID).once("value").then(function(snapshot) {
+  return database.ref(`playerSecrets/${playerID}`).once("value").then(function(snapshot) {
     return snapshot.val();
   });
 }
 
 var getLocation = function(x, y) {
-  return database.ref("locations/" + x + "/" + y).once("value").then(function(snapshot) {
+  return database.ref(`locations/${x}/${y}`).once("value").then(function(snapshot) {
     return snapshot.val();
   });
 }

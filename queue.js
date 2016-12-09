@@ -69,11 +69,11 @@ var processRequest = async function(request, progress, resolve, reject) {
       var location = `locations/${spawnLocation[0]}/${spawnLocation[1]}`;
 
       updates[`${location}/tileOwner`] = request.playerID;
-      updates[`${location}/objectOwner`] = request.playerID;
-      updates[`${location}/objectType`] = "tower";
-      updates[`${location}/objectLastX`] = null;
-      updates[`${location}/objectLastY`] = null;
-      updates[`${location}/objectLastTurn`] = 0;
+      updates[`${location}/unit`] = "tower";
+      updates[`${location}/unitOwner`] = request.playerID;
+      updates[`${location}/unitLastX`] = null;
+      updates[`${location}/unitLastY`] = null;
+      updates[`${location}/unitLastTurn`] = 0;
 
       break;
 

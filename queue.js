@@ -79,28 +79,53 @@ var processRequest = async function(request, progress, resolve, reject) {
 
     // Move
     case "move":
-      var player = await getPlayer(request.playerID);
+      // Fetch origin
+      var origin = await getLocation(request.origin.x, request.origin.y);
 
-      if (!player) {
-        error("Player has not spawned?", request.playerID, updates, reject);
+      // Can you move that unit?
+      if (origin.unitOwner !== request.playerID) {
+        error("Can't move units you don't own", request.playerID, updates, reject);
         break;
       }
 
-      var distance = distanceBetween([player.x, player.y], [request.target.x, request.target.y]);
+      // Is the distance short enough?
+      var distance = distanceBetween([request.origin.x, request.origin.y], [request.target.x, request.target.y]);
 
-      if (distance > 6) {
+      if (distance > 1.5) {
         error("Distance too great", request.playerID, updates, reject);
         break;
       }
 
-      var currentLocation = await getLocation(player.x, player.y);
-      var targetLocation = await getLocation(request.target.x, request.target.y);
+      // Fetch target
+      var target = await getLocation(request.target.x, request.target.y) || {};
 
-      updates[`playerSecrets/${request.playerID}/x`] = request.target.x;
-      updates[`playerSecrets/${request.playerID}/y`] = request.target.y;
-      updates[`locations/${player.x}/${player.y}/objectID`] = null;
-      updates[`locations/${request.target.x}/${request.target.y}/objectID`] = request.playerID;
-      updates[`playerSecrets/${request.playerID}/message`] = "Successfully moved";
+      // Is target occupied?
+      if (target.unit) {
+        error("Can't move onto another unit", request.playerID, updates, reject);
+        break;
+      }
+
+      // Conquer target tile
+      updates[`locations/${request.target.x}/${request.target.y}/tileOwner`] = request.playerID;
+      updates[`playerSecrets/${request.playerID}/locations/${request.target.x}/${request.target.y}`] = true;
+
+      if (target.tileOwner) {
+        updates[`playerSecrets/${target.tileOwner}/locations/${request.target.x}/${request.target.y}`] = false;
+      }
+
+      // Remove unit from origin tile
+      updates[`locations/${request.origin.x}/${request.origin.y}/unit`] = null;
+      updates[`locations/${request.origin.x}/${request.origin.y}/unitOwner`] = null;
+      updates[`locations/${request.origin.x}/${request.origin.y}/unitLastX`] = null;
+      updates[`locations/${request.origin.x}/${request.origin.y}/unitLastY`] = null;
+      updates[`locations/${request.origin.x}/${request.origin.y}/unitLastTurn`] = null;
+
+      // Add same unit to target tile
+      updates[`locations/${request.target.x}/${request.target.y}/unit`] = origin.unit;
+      updates[`locations/${request.target.x}/${request.target.y}/unitOwner`] = origin.unitOwner;
+      updates[`locations/${request.target.x}/${request.target.y}/unitLastX`] = request.origin.x;
+      updates[`locations/${request.target.x}/${request.target.y}/unitLastY`] = request.origin.y;
+      updates[`locations/${request.target.x}/${request.target.y}/unitLastTurn`] = origin.unitLastTurn;
 
       break;
 

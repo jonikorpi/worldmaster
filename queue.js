@@ -74,6 +74,7 @@ var processRequest = async function(request, progress, resolve, reject) {
       updates[`${location}/unitLastX`] = null;
       updates[`${location}/unitLastY`] = null;
       updates[`${location}/unitLastTurn`] = 0;
+      updates[`${location}/unitLastAction`] = "spawn";
 
       break;
 
@@ -119,6 +120,7 @@ var processRequest = async function(request, progress, resolve, reject) {
       updates[`locations/${request.origin.x}/${request.origin.y}/unitLastX`] = null;
       updates[`locations/${request.origin.x}/${request.origin.y}/unitLastY`] = null;
       updates[`locations/${request.origin.x}/${request.origin.y}/unitLastTurn`] = null;
+      updates[`locations/${request.origin.x}/${request.origin.y}/unitLastAction`] = null;
 
       // Add same unit to target tile
       updates[`locations/${request.target.x}/${request.target.y}/unit`] = origin.unit;
@@ -126,6 +128,7 @@ var processRequest = async function(request, progress, resolve, reject) {
       updates[`locations/${request.target.x}/${request.target.y}/unitLastX`] = request.origin.x;
       updates[`locations/${request.target.x}/${request.target.y}/unitLastY`] = request.origin.y;
       updates[`locations/${request.target.x}/${request.target.y}/unitLastTurn`] = origin.unitLastTurn;
+      updates[`locations/${request.target.x}/${request.target.y}/unitLastAction`] = "move";
 
       break;
 

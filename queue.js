@@ -1,18 +1,23 @@
-var Queue = require("firebase-queue");
-var firebase = require("firebase-admin");
+const Queue = require("firebase-queue");
+const firebase = require("firebase-admin");
 
-var serviceAccount = require("./secret.json");
+const serviceAccount = require("./secret.json");
 
+//
 // Setup connection
+
 firebase.initializeApp({
   credential: firebase.credential.cert(serviceAccount),
   databaseURL: "https://world-15e5d.firebaseio.com",
   databaseAuthVariableOverride: { worldmaster: true },
 });
-var database = firebase.database();
 
-// Functions
-var prepareRequest = function(data, progress, resolve, reject) {
+const database = firebase.database();
+
+//
+// Task processing
+
+const prepareRequest = function(data, progress, resolve, reject) {
   try {
     if (data.request) {
       console.log("Processing", data.request);
@@ -28,22 +33,22 @@ var prepareRequest = function(data, progress, resolve, reject) {
   }
 }
 
-var processRequest = async function(request, progress, resolve, reject) {
-  var updates = {};
+const processRequest = async function(request, progress, resolve, reject) {
+  let updates = {};
 
   switch (request.action) {
 
     // Spawn
     case "spawn":
-      var player = await getPlayer(request.playerID);
+      const player = await fetchPlayer(request.playerID);
       if (player) {
         error("Player has already spawned", request.playerID, updates, reject);
         break;
       }
 
 
-      var spawnFound = false;
-      var spawnLocation;
+      let spawnFound = false;
+      let spawnLocation;
 
       while (!spawnFound) {
         spawnLocation = [
@@ -51,7 +56,7 @@ var processRequest = async function(request, progress, resolve, reject) {
           Math.floor(Math.random() * 20) - 10,
         ];
 
-        if (await !getLocation(spawnLocation[0], spawnLocation[1]).tileOwner) {
+        if (await !fetchLocation(spawnLocation[0], spawnLocation[1]).tileOwner) {
           spawnFound = true;
         }
       }
@@ -66,7 +71,7 @@ var processRequest = async function(request, progress, resolve, reject) {
         },
       };
 
-      var location = `locations/${spawnLocation[0]}/${spawnLocation[1]}`;
+      const location = `locations/${spawnLocation[0]}/${spawnLocation[1]}`;
 
       updates[`${location}/tileOwner`] = request.playerID;
       updates[`${location}/unit`] = "tower";
@@ -80,55 +85,93 @@ var processRequest = async function(request, progress, resolve, reject) {
 
     // Move
     case "move":
-      // Fetch origin
-      var origin = await getLocation(request.origin.x, request.origin.y);
-
-      // Can you move that unit?
-      if (origin.unitOwner !== request.playerID) {
-        error("Can't move units you don't own", request.playerID, updates, reject);
-        break;
-      }
+      //
+      // Preliminary checks
 
       // Is the distance short enough?
-      var distance = distanceBetween([request.origin.x, request.origin.y], [request.target.x, request.target.y]);
+      const distance = distanceBetween([request.origin.x, request.origin.y], [request.target.x, request.target.y]);
 
       if (distance > 1.5) {
         error("Distance too great", request.playerID, updates, reject);
         break;
       }
 
-      // Fetch target
-      var target = await getLocation(request.target.x, request.target.y) || {};
+      //
+      // Check origin and target
 
-      // Is target occupied?
-      if (target.unit) {
-        error("Can't move onto another unit", request.playerID, updates, reject);
+      const [origin, target] = await Promise.all([
+        fetchLocation(request.origin.x, request.origin.y),
+        fetchLocation(request.target.x, request.target.y)
+      ]);
+
+
+      // Does origin contain your unit?
+      if (origin.unitOwner !== request.playerID) {
+        error("Can't move units you don't own", request.playerID, updates, reject);
         break;
       }
 
-      // Conquer target tile
-      updates[`locations/${request.target.x}/${request.target.y}/tileOwner`] = request.playerID;
-      updates[`playerSecrets/${request.playerID}/locations/${request.target.x}/${request.target.y}`] = true;
+      //
+      // Try to perform the action on target
 
-      if (target.tileOwner) {
-        updates[`playerSecrets/${target.tileOwner}/locations/${request.target.x}/${request.target.y}`] = false;
+      const target = referenceLocation(request.target.x, request.target.y);
+      let oldTargetValue;
+
+      let targetTransaction = await target.transaction(async function(targetValue) {
+        // Save first target value
+        if (!oldTargetValue) {
+          oldTargetValue = targetValue;
+        }
+
+        // Is target occupied?
+        if (targetValue.unit) {
+          error("Can't move onto another unit", request.playerID, updates, reject);
+          return;
+        }
+
+        else {
+          targetValue.tileOwner = request.playerID;
+          targetValue.unit = fetchedOrigin.unit;
+          targetValue.unitOwner = fetchedOrigin.unitOwner;
+          targetValue.unitLastX = request.origin.x;
+          targetValue.unitLastY = request.origin.y;
+          targetValue.unitLastTurn = fetchedOrigin.unitLastTurn;
+          targetValue.unitLastAction = "move";
+
+          return targetValue;
+        }
+      });
+
+      if (!targetTransaction.committed) {
+        error("Action on the target failed", request.playerID, updates, reject);
+        break;
       }
 
-      // Remove unit from origin tile
-      updates[`locations/${request.origin.x}/${request.origin.y}/unit`] = null;
-      updates[`locations/${request.origin.x}/${request.origin.y}/unitOwner`] = null;
-      updates[`locations/${request.origin.x}/${request.origin.y}/unitLastX`] = null;
-      updates[`locations/${request.origin.x}/${request.origin.y}/unitLastY`] = null;
-      updates[`locations/${request.origin.x}/${request.origin.y}/unitLastTurn`] = null;
-      updates[`locations/${request.origin.x}/${request.origin.y}/unitLastAction`] = null;
+      //
+      // Try to inflict the consequences on origin
 
-      // Add same unit to target tile
-      updates[`locations/${request.target.x}/${request.target.y}/unit`] = origin.unit;
-      updates[`locations/${request.target.x}/${request.target.y}/unitOwner`] = origin.unitOwner;
-      updates[`locations/${request.target.x}/${request.target.y}/unitLastX`] = request.origin.x;
-      updates[`locations/${request.target.x}/${request.target.y}/unitLastY`] = request.origin.y;
-      updates[`locations/${request.target.x}/${request.target.y}/unitLastTurn`] = origin.unitLastTurn;
-      updates[`locations/${request.target.x}/${request.target.y}/unitLastAction`] = "move";
+      const origin = referenceLocation(request.origin.x, request.origin.y);
+      const newTargetValue = targetTransaction.snapshot;
+
+      let originTransaction = await origin.transaction((originValue) => {
+        originValue.unit = null;
+        originValue.unitOwner = null;
+        originValue.unitLastX = null;
+        originValue.unitLastY = null;
+        originValue.unitLastTurn = null;
+        originValue.unitLastAction = null;
+
+        return originValue;
+      });
+
+      //
+      // Update indexes
+
+      updates[`playerSecrets/${request.playerID}/locations/${request.target.x}/${request.target.y}`] = true;
+
+      if (oldTargetValue.tileOwner) {
+        updates[`playerSecrets/${target.tileOwner}/locations/${request.target.x}/${request.target.y}`] = null;
+      }
 
       break;
 
@@ -142,32 +185,37 @@ var processRequest = async function(request, progress, resolve, reject) {
     return database.ref().update(updates).then(resolve).catch(reject);
   }
   else {
-    reject("No valid updates to make");
+    reject("No updates to make");
   }
 }
 
-// Fetching functions
-var getPlayer = function(playerID) {
+//
+// Helper functions
+
+const fetchPlayer = function(playerID) {
   return database.ref(`playerSecrets/${playerID}`).once("value").then(function(snapshot) {
     return snapshot.val();
   });
 }
 
-var getLocation = function(x, y) {
+const fetchLocation = function(x, y) {
   return database.ref(`locations/${x}/${y}`).once("value").then(function(snapshot) {
     return snapshot.val();
   });
 }
 
-// Utility functions
-var error = function(message, playerID, reject) {
+const referenceLocation = function(x, y) {
+  return database.ref(`locations/${x}/${y}`);
+}
+
+const error = function(message, playerID, reject) {
   console.log(playerID, message);
-  var updates = {};
+  let updates = {};
   updates[`playerSecrets/${playerID}/message`] = message;
   return database.ref().update(updates).then(reject).catch(reject);
 }
 
-var distanceBetween = function(origin, target) {
+const distanceBetween = function(origin, target) {
   return (
     Math.abs(
       Math.sqrt(
@@ -178,30 +226,26 @@ var distanceBetween = function(origin, target) {
   );
 }
 
-// Start player queue
-var playerQueue = new Queue(
-  database.ref("playerQueue"),
-  {"numWorkers": 5},
-  prepareRequest
-);
+//
+// Queue starting
 
-// Start game queue
-var actionQueue = new Queue(
+const actionQueue = new Queue(
   database.ref("actionQueue"),
   {"numWorkers": 5},
   prepareRequest
 );
 
-// Terminate nicely
-process.on("SIGINT", function() {
-  console.log("Starting queue shutdowns");
+console.log("Queue started");
 
-  playerQueue.shutdown()
-  .then(actionQueue.shutdown())
+//
+// Queue ending
+
+process.on("SIGINT", function() {
+  console.log("Starting queue shutdown");
+
+  actionqueue.shutdown()
   .then(function() {
-    console.log("Finished queue shutdowns");
+    console.log("Finished queue shutdown");
     process.exit(0);
   });
 });
-
-console.log("Queues started");

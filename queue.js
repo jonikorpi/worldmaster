@@ -67,7 +67,7 @@ const processRequest = async function(request, progress, resolve, reject) {
       const unitKey = database.ref().push().key;
 
       // Update player index
-      updates[`playerSecrets/${request.playerID}/locations/${spawnLocation[0]/$spawnLocation[1]}`] = true;
+      updates[`playerSecrets/${request.playerID}/locations/${spawnLocation[0]},${spawnLocation[1]`]: true`] = true;
       updates[`playerSecrets/${request.playerID}/message`] = "Successfully spawned";
 
       // Add unit

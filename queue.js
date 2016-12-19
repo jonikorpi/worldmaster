@@ -41,11 +41,14 @@ const processRequest = async function(request, progress, resolve, reject) {
     // Spawn
     case "spawn":
       const player = await fetchPlayer(request.playerID);
+
+      // Make sure player hasn't spawned yet
       if (player) {
         error("Player has already spawned", request.playerID, updates, reject);
         break;
       }
 
+      // Find an empty island
       let spawnFound = false;
       let spawnLocation;
 
@@ -64,12 +67,8 @@ const processRequest = async function(request, progress, resolve, reject) {
       const unitKey = database.ref().push().key;
 
       // Update player index
-      updates[`playerSecrets/${request.playerID}`] = {
-        "message": "Successfully spawned",
-        locations: {
-          [`${spawnLocation[0]},${spawnLocation[1]}`]: true
-        },
-      };
+      updates[`playerSecrets/${request.playerID}/locations/${spawnLocation[0]/$spawnLocation[1]}`] = true;
+      updates[`playerSecrets/${request.playerID}/message`] = "Successfully spawned";
 
       // Add unit
       updates[`${location}/units/${unitKey}`] = {

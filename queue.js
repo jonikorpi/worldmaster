@@ -193,7 +193,7 @@ const processRequest = async function(request, progress, resolve, reject) {
     return database.ref().update(updates).then(resolve).catch(reject);
   }
 
-  console.log("Successfully processed");
+  console.log("Successfully processed in", Date.now() - request.time);
 }
 
 //
